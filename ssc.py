@@ -55,31 +55,38 @@ validation_dir = specific_path + "/valid"
 test_dir = specific_path + "/test"
 
 # Images are 640, but 224 is way faster for training
-IMG_SIZE = 224
+IMG_SIZE = 160
+BATCH_SIZE = 64
 
 train_dataset = image_dataset_from_directory(
     train_dir,
     image_size=(IMG_SIZE, IMG_SIZE),
-    batch_size=32
+    batch_size=BATCH_SIZE
 )
 
 validation_dataset = image_dataset_from_directory(
     validation_dir,
     image_size=(IMG_SIZE, IMG_SIZE),
-    batch_size=32
+    batch_size=BATCH_SIZE
 )
 
 test_dataset = image_dataset_from_directory(
     test_dir,
     image_size=(IMG_SIZE, IMG_SIZE),
-    batch_size=32
+    batch_size=BATCH_SIZE
 )
+
+# Optimize data pipeline for speed
+train_dataset = train_dataset.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+validation_dataset = validation_dataset.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+test_dataset = test_dataset.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
 
 for data_batch, labels_batch in train_dataset:
     print('data batch shape:', data_batch.shape)
     print('labels batch shape:', labels_batch.shape)
     break
 
+# Optimal model for better categorization
 inputs = keras.Input(shape=(IMG_SIZE, IMG_SIZE, 3))
 x = layers.Rescaling(1./255)(inputs)
 x = layers.Conv2D(filters=32, kernel_size=3, activation="relu")(x)
@@ -101,9 +108,28 @@ model.compile(
     optimizer=tf.keras.optimizers.RMSprop(learning_rate=1e-4),
     metrics=['accuracy'])
 
+# Optimized model for faster training
+inputs = keras.Input(shape=(IMG_SIZE, IMG_SIZE, 3))
+x = layers.Rescaling(1./255)(inputs)
+x = layers.Conv2D(filters=16, kernel_size=3, activation="relu")(x)
+x = layers.MaxPooling2D(pool_size=2)(x)
+x = layers.Conv2D(filters=32, kernel_size=3, activation="relu")(x)
+x = layers.MaxPooling2D(pool_size=2)(x)
+x = layers.Conv2D(filters=64, kernel_size=3, activation="relu")(x)
+x = layers.MaxPooling2D(pool_size=2)(x)
+x = layers.Flatten()(x)
+x = layers.Dropout(0.5)(x)
+x = layers.Dense(256, activation="relu")(x)
+outputs = layers.Dense(10, activation="softmax")(x)
+model = keras.Model(inputs=inputs, outputs=outputs)
+model.compile(
+    loss='sparse_categorical_crossentropy',
+    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
+    metrics=['accuracy'])
+
 history = model.fit(
     train_dataset,
-    epochs=30,
+    epochs=1,
     validation_data=validation_dataset)
 
 acc = history.history['acc']
