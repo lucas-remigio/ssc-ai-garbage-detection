@@ -1,82 +1,92 @@
-
-# Add to your notebook
 import tensorflow as tf
 import time
 import os
 import json
 from datetime import datetime
 
-print(f"[{datetime.now()}] Starting TFLite conversion process...")
-print(f"[{datetime.now()}] TensorFlow version: {tf.__version__}")
+# Início do processo
+print(f"[{datetime.now()}] Início da conversão para TFLite")
+print(f"Versão do TensorFlow: {tf.__version__}")
 
-# Timing function
+# Função para medir tempo
 def log_time(start_time, message):
     elapsed = time.time() - start_time
-    print(f"[{datetime.now()}] {message} - Took {elapsed:.2f} seconds")
+    print(f"[{datetime.now()}] {message} - Levou {elapsed:.2f} segundos")
     return time.time()
 
 total_start = time.time()
 step_start = total_start
 
-print(f"[{datetime.now()}] Step 1: Loading saved Keras model...")
+# Passo 1: Carregar modelo .keras
+print(f"[{datetime.now()}] Carregando modelo .keras...")
 try:
-    model = tf.keras.models.load_model("models/garbage_classifier_model.keras")
-    step_start = log_time(step_start, "✅ Model loaded successfully")
-    print(f"[{datetime.now()}] Model summary:")
+    model = tf.keras.models.load_model("vgg16_finetuned_model.keras")
+    step_start = log_time(step_start, "✅ Modelo carregado com sucesso")
+    print("Resumo do modelo:")
     model.summary()
 except Exception as e:
-    print(f"[{datetime.now()}] ❌ Error loading model: {str(e)}")
+    print(f"[{datetime.now()}] ❌ Erro ao carregar o modelo: {str(e)}")
     raise
 
-print(f"[{datetime.now()}] Step 2: Getting class names...")
+# Passo 2: Carregar nomes das classes (se tiveres o JSON já gerado)
 try:
-    class_names = train_dataset.class_names
-    print(f"[{datetime.now()}] ✅ Found {len(class_names)} classes: {class_names}")
-    step_start = log_time(step_start, "Class names retrieved")
-except Exception as e:
-    print(f"[{datetime.now()}] ❌ Error getting class names: {str(e)}")
-    raise
+    with open("class_names.json", "r") as f:
+        class_names = json.load(f)
+    print(f"[{datetime.now()}] ✅ Nomes das classes carregados: {class_names}")
+    step_start = log_time(step_start, "Nomes das classes carregados")
+except:
+    class_names = ["class_" + str(i) for i in range(model.output_shape[-1])]
+    print(f"[{datetime.now()}] ⚠️ Usando nomes de classe genéricos: {class_names}")
+    step_start = log_time(step_start, "Classes genéricas atribuídas")
 
-print(f"[{datetime.now()}] Step 3: Setting up TFLite converter...")
+# Passo 3: Preparar conversor TFLite
+print(f"[{datetime.now()}] Configurando TFLiteConverter...")
 try:
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
-    converter.optimizations = [tf.lite.Optimize.DEFAULT]  # Optimize for size and latency
-    print(f"[{datetime.now()}] ✅ Converter configured with optimizations")
-    step_start = log_time(step_start, "Converter setup complete")
+    converter.optimizations = [tf.lite.Optimize.DEFAULT]
+    converter.target_spec.supported_ops = [
+        tf.lite.OpsSet.TFLITE_BUILTINS,     # Operações padrão do TFLite
+        tf.lite.OpsSet.SELECT_TF_OPS        # Operações completas do TF (necessário p/ VGG16, etc.)
+    ]
+    converter.experimental_enable_resource_variables = True
+    step_start = log_time(step_start, "✅ Conversor configurado")
 except Exception as e:
-    print(f"[{datetime.now()}] ❌ Error setting up converter: {str(e)}")
+    print(f"[{datetime.now()}] ❌ Erro ao configurar o conversor: {str(e)}")
     raise
 
-print(f"[{datetime.now()}] Step 4: Converting model to TFLite format (this might take a while)...")
+# Passo 4: Converter o modelo
+print(f"[{datetime.now()}] Convertendo modelo...")
 try:
     conversion_start = time.time()
     tflite_model = converter.convert()
-    print(f"[{datetime.now()}] ✅ Conversion successful! TFLite model size: {len(tflite_model) / (1024 * 1024):.2f} MB")
-    step_start = log_time(conversion_start, "Model conversion")
+    print(f"[{datetime.now()}] ✅ Conversão feita com sucesso! Tamanho: {len(tflite_model) / (1024 * 1024):.2f} MB")
+    step_start = log_time(conversion_start, "Conversão para TFLite finalizada")
 except Exception as e:
-    print(f"[{datetime.now()}] ❌ Error during conversion: {str(e)}")
+    print(f"[{datetime.now()}] ❌ Erro durante a conversão: {str(e)}")
     raise
 
-print(f"[{datetime.now()}] Step 5: Saving TFLite model to file...")
+# Passo 5: Guardar modelo .tflite
+print(f"[{datetime.now()}] Guardando modelo .tflite...")
 try:
-    with open('garbage_classifier.tflite', 'wb') as f:
+    with open("garbage_classifier.tflite", "wb") as f:
         f.write(tflite_model)
-    file_size = os.path.getsize('garbage_classifier.tflite') / (1024 * 1024)
-    print(f"[{datetime.now()}] ✅ TFLite model saved successfully, file size: {file_size:.2f} MB")
-    step_start = log_time(step_start, "TFLite model file save")
+    print(f"[{datetime.now()}] ✅ Modelo salvo como garbage_classifier.tflite")
+    step_start = log_time(step_start, "Salvo com sucesso")
 except Exception as e:
-    print(f"[{datetime.now()}] ❌ Error saving TFLite model: {str(e)}")
+    print(f"[{datetime.now()}] ❌ Erro ao guardar o modelo TFLite: {str(e)}")
     raise
 
-print(f"[{datetime.now()}] Step 6: Saving class names to JSON...")
+# Passo 6: Guardar nomes das classes
+print(f"[{datetime.now()}] Guardando class_names.json...")
 try:
-    with open('class_names.json', 'w') as f:
+    with open("class_names.json", "w") as f:
         json.dump(class_names, f)
-    print(f"[{datetime.now()}] ✅ Class names JSON saved")
-    step_start = log_time(step_start, "Class names save")
+    print(f"[{datetime.now()}] ✅ Arquivo class_names.json salvo")
+    step_start = log_time(step_start, "Classes salvas")
 except Exception as e:
-    print(f"[{datetime.now()}] ❌ Error saving class names: {str(e)}")
+    print(f"[{datetime.now()}] ❌ Erro ao salvar nomes das classes: {str(e)}")
     raise
 
-log_time(total_start, "🎉 Complete TFLite conversion process")
-print(f"[{datetime.now()}] Model and class names ready for mobile app deployment")
+# Fim
+log_time(total_start, "🎉 Processo de conversão completo")
+print(f"[{datetime.now()}] Modelo TFLite pronto para uso em app móvel.")
