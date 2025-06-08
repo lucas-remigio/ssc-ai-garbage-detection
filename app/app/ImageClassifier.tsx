@@ -74,42 +74,68 @@ export default function ImageClassifier() {
 
     try {
       setClassifying(true);
+      console.log("🕒 [classifyImage] Start");
+      console.time("🕒 classification total");
 
-      // Read the image file
+      // 1) Read the image file
+      console.log("📁 Reading image from URI:", image);
+      console.time("🕒 read file");
       const imgB64 = await FileSystem.readAsStringAsync(image, {
         encoding: FileSystem.EncodingType.Base64,
       });
+      console.timeEnd("🕒 read file");
+      console.log("📦 Base64 length:", imgB64.length);
 
-      // Decode the image
+      // 2) Decode the JPEG
+      console.time("🕒 decodeJpeg");
       const imgBuffer = tf.util.encodeString(imgB64, "base64").buffer;
       const raw = new Uint8Array(imgBuffer);
       const imageTensor = decodeJpeg(raw);
+      console.timeEnd("🕒 decodeJpeg");
+      console.log("📐 Decoded tensor shape:", imageTensor.shape);
 
-      // Preprocess the image
+      // 3) Preprocess
+      console.time("🕒 preprocess");
       const processed = tf.image
-        .resizeBilinear(imageTensor, [128, 128]) // Use your model's expected input size
+        .resizeBilinear(imageTensor, [128, 128])
         .div(255.0)
         .expandDims(0);
+      console.timeEnd("🕒 preprocess");
+      console.log("🔄 Processed tensor shape:", processed.shape);
 
-      // Run inference
+      // 4) Inference
+      console.log("▶️ Running model.predict…");
+      console.time("🕒 predict");
       const predictions = model.predict(processed) as tf.Tensor;
       const data = await predictions.data();
+      console.timeEnd("🕒 predict");
+      console.log("✅ Raw output length:", data.length);
 
-      // Get the top prediction
+      // 5) Post-process
       const maxIndex = data.indexOf(Math.max(...Array.from(data)));
-      const className = classNames[maxIndex];
-      const confidence = data[maxIndex] * 100;
+      const className = classNames[maxIndex] ?? "unknown";
+      const confidence = (data[maxIndex] ?? 0) * 100;
+      console.log(`🏷️ Result: ${className} (${confidence.toFixed(1)}%)`);
+
+      console.log("📊 All scores:", Array.from(data));
+      console.log(
+        "🏷️ Picking index:",
+        maxIndex,
+        "=> class:",
+        classNames[maxIndex]
+      );
 
       setPrediction(`${className} (${confidence.toFixed(1)}%)`);
 
-      // Clean up tensors
+      // 6) Cleanup
       imageTensor.dispose();
       processed.dispose();
       predictions.dispose();
     } catch (err) {
-      console.error("Classification error:", err);
+      console.error("❌ Classification error:", err);
       setPrediction(`Error: ${(err as Error).message}`);
     } finally {
+      console.timeEnd("🕒 classification total");
       setClassifying(false);
     }
   };

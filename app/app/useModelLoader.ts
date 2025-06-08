@@ -48,6 +48,17 @@ export function useModelLoader() {
         );
 
         console.log("✅ GraphModel loaded:", loaded);
+
+        // right after `const loaded = await tf.loadGraphModel(...)`
+        console.log(
+          "🔍 Model outputs:",
+          loaded.outputs.map((o) => o.name + " " + o.shape + " " + o.dtype)
+        );
+        // e.g. should print: [[1,10]] or [null,10] depending on signature
+
+        console.log("🔍 Signature:", loaded.modelSignature);
+        // inputs should list "input_layer_1" with shape [null,128,128,3]
+        // outputs should list "output_0" with dtype and shape [null,10]
         setModel(loaded);
       } catch (e) {
         console.error("❌ Failed to load GraphModel:", e);
