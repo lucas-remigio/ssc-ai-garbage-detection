@@ -25,6 +25,8 @@ export function useModelLoader() {
         // Load model.json
         const modelUrl = require("../assets/model.json");
         console.log("📁 Model data loaded from bundle");
+        console.log("🔍 Model data type:", typeof modelUrl);
+        console.log("🔍 Model data keys:", Object.keys(modelUrl).slice(0, 5));
 
         // Load all weight shards
         const weightShards = [
@@ -45,10 +47,16 @@ export function useModelLoader() {
           require("../assets/group1-shard15of15.bin"),
         ];
 
-        // Load the model using bundleResourceIO
-        const loadedModel = await tf.loadGraphModel(
-          bundleResourceIO(modelUrl, weightShards)
-        );
+        console.log("📦 Weight shards loaded from bundle");
+        console.log("🔍 First shard type:", typeof weightShards[0]);
+        console.log("🔍 First shard:", weightShards[0]);
+
+        // Try loading the model using bundleResourceIO
+        console.log("🔄 Attempting to create bundleResourceIO...");
+        const ioHandler = bundleResourceIO(modelUrl, weightShards);
+        console.log("✅ bundleResourceIO created successfully");
+
+        const loadedModel = await tf.loadGraphModel(ioHandler);
 
         console.log("✅ Real model loaded successfully!");
         console.log(
