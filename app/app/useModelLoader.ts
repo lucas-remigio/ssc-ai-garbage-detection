@@ -1,8 +1,8 @@
 /* eslint-disable */
-import { useEffect, useState } from "react";
-import * as tf from "@tensorflow/tfjs";
 import "@tensorflow/tfjs-react-native";
-import { Alert } from "react-native";
+import * as tf from "@tensorflow/tfjs";
+import { bundleResourceIO } from "@tensorflow/tfjs-react-native";
+import { useEffect, useState } from "react";
 
 export function useModelLoader() {
   const [model, setModel] = useState<tf.GraphModel | null>(null);
@@ -10,74 +10,52 @@ export function useModelLoader() {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    async function loadModel() {
+    (async () => {
       try {
-        // 1️⃣ initialize TFJS RN backend
         await tf.ready();
         console.log("✅ TensorFlow ready");
 
-        console.log("🔍 Looking for model files...");
-        console.log("⏳ Loading model...");
+        // 1) require the GraphModel spec & shards from your assets/model folder
+        const modelJson = require("../assets/saved_model/model.json");
 
-        // For React Native, we need to use require() for bundled assets
-        const { bundleResourceIO } = require("@tensorflow/tfjs-react-native");
+        console.log("🔗 Loading model.json:", modelJson);
 
-        // Load model.json
-        const modelUrl = require("../assets/model.json");
-        console.log("📁 Model data loaded from bundle");
-        console.log("🔍 Model data type:", typeof modelUrl);
-        console.log("🔍 Model data keys:", Object.keys(modelUrl).slice(0, 5));
-
-        // Load all weight shards
         const weightShards = [
-          require("../assets/group1-shard1of15.bin"),
-          require("../assets/group1-shard2of15.bin"),
-          require("../assets/group1-shard3of15.bin"),
-          require("../assets/group1-shard4of15.bin"),
-          require("../assets/group1-shard5of15.bin"),
-          require("../assets/group1-shard6of15.bin"),
-          require("../assets/group1-shard7of15.bin"),
-          require("../assets/group1-shard8of15.bin"),
-          require("../assets/group1-shard9of15.bin"),
-          require("../assets/group1-shard10of15.bin"),
-          require("../assets/group1-shard11of15.bin"),
-          require("../assets/group1-shard12of15.bin"),
-          require("../assets/group1-shard13of15.bin"),
-          require("../assets/group1-shard14of15.bin"),
-          require("../assets/group1-shard15of15.bin"),
+          require("../assets/saved_model/group1-shard1of15.bin"),
+          require("../assets/saved_model/group1-shard2of15.bin"),
+          require("../assets/saved_model/group1-shard3of15.bin"),
+          require("../assets/saved_model/group1-shard4of15.bin"),
+          require("../assets/saved_model/group1-shard5of15.bin"),
+          require("../assets/saved_model/group1-shard6of15.bin"),
+          require("../assets/saved_model/group1-shard7of15.bin"),
+          require("../assets/saved_model/group1-shard8of15.bin"),
+          require("../assets/saved_model/group1-shard9of15.bin"),
+          require("../assets/saved_model/group1-shard10of15.bin"),
+          require("../assets/saved_model/group1-shard11of15.bin"),
+          require("../assets/saved_model/group1-shard12of15.bin"),
+          require("../assets/saved_model/group1-shard13of15.bin"),
+          require("../assets/saved_model/group1-shard14of15.bin"),
+          require("../assets/saved_model/group1-shard15of15.bin"),
         ];
 
-        console.log("📦 Weight shards loaded from bundle");
-        console.log("🔍 First shard type:", typeof weightShards[0]);
-        console.log("🔍 First shard:", weightShards[0]);
+        console.log("🔗 Weight shards:", weightShards);
 
-        // Try loading the model using bundleResourceIO
-        console.log("🔄 Attempting to create bundleResourceIO...");
-        const ioHandler = bundleResourceIO(modelUrl, weightShards);
-        console.log("✅ bundleResourceIO created successfully");
+        console.log("🔗 Loading GraphModel…");
 
-        const loadedModel = await tf.loadGraphModel(ioHandler);
-
-        console.log("✅ Real model loaded successfully!");
-        console.log(
-          `📊 Input shape: ${JSON.stringify(loadedModel.inputs[0].shape)}`
-        );
-        console.log(
-          `📊 Output shape: ${JSON.stringify(loadedModel.outputs[0].shape)}`
+        // 2) load as GraphModel
+        const loaded = await tf.loadGraphModel(
+          bundleResourceIO(modelJson, weightShards)
         );
 
-        setModel(loadedModel);
-        Alert.alert("Success", "Real TensorFlow.js model loaded successfully!");
-      } catch (err) {
-        console.error("❌ Failed to load model:", err);
-        setError(err as Error);
-        Alert.alert("Error", (err as Error).message);
+        console.log("✅ GraphModel loaded:", loaded);
+        setModel(loaded);
+      } catch (e) {
+        console.error("❌ Failed to load GraphModel:", e);
+        setError(e as Error);
       } finally {
         setLoading(false);
       }
-    }
-
-    loadModel();
+    })();
   }, []);
 
   return { model, loading, error };

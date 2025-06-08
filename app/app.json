@@ -23,7 +23,11 @@
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
-    "assetBundlePatterns": ["assets/**/*", "assets/*", "assets/models/*"],
+    "assetBundlePatterns": [
+      "assets/**/*",
+      "assets/*",
+      "assets/models/*"
+    ],
     "plugins": [
       "expo-router",
       [
@@ -46,7 +50,8 @@
         {
           "cameraPermission": "The app needs access to your camera to classify waste items in real-time."
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
