@@ -6,4 +6,4 @@ venv/*
 
 models/*
 
-node_modules
+node_modules/
