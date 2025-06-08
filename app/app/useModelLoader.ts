@@ -59,6 +59,26 @@ export function useModelLoader() {
         console.log("🔍 Signature:", loaded.modelSignature);
         // inputs should list "input_layer_1" with shape [null,128,128,3]
         // outputs should list "output_0" with dtype and shape [null,10]
+
+        // 1) Warm it up with zeros
+        const warm = tf.zeros([1, 128, 128, 3]);
+        const wOut1 = await (loaded.predict(warm) as tf.Tensor).data();
+        const wOut2 = await (loaded.predict(warm) as tf.Tensor).data();
+        console.log("Warm-up #1:", Array.from(wOut1));
+        console.log("Warm-up #2:", Array.from(wOut2));
+
+        // 2) Run on two *different* random tensors
+        const r1 = tf.randomUniform([1, 128, 128, 3]);
+        const r2 = tf.randomUniform([1, 128, 128, 3]);
+        console.log(
+          "Random #1:",
+          Array.from(await (loaded.predict(r1) as tf.Tensor).data())
+        );
+        console.log(
+          "Random #2:",
+          Array.from(await (loaded.predict(r2) as tf.Tensor).data())
+        );
+
         setModel(loaded);
       } catch (e) {
         console.error("❌ Failed to load GraphModel:", e);
