@@ -14,16 +14,16 @@ export default function ImageClassifier() {
 
   // Class names for your model - dynamically loaded
   const [classNames, setClassNames] = useState<string[]>([
-    "paper",
-    "plastic",
+    "battery",
+    "biological",
+    "cardboard",
+    "clothes",
     "glass",
     "metal",
-    "cardboard",
+    "paper",
+    "plastic",
+    "shoes",
     "trash",
-    "battery",
-    "e-waste",
-    "organic",
-    "fabric",
   ]);
 
   // Load class names from JSON file
@@ -98,7 +98,6 @@ export default function ImageClassifier() {
       console.time("🕒 preprocess");
       const processed = tf.image
         .resizeBilinear(imageTensor, [128, 128])
-        .div(255.0)
         .expandDims(0);
       console.timeEnd("🕒 preprocess");
       console.log("🔄 Processed tensor shape:", processed.shape);

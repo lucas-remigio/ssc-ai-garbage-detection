@@ -1,1 +1,12 @@
-["paper", "plastic", "glass", "metal", "cardboard", "trash", "battery", "e-waste", "organic", "fabric"]
+[
+  "battery",
+  "biological",
+  "cardboard",
+  "clothes",
+  "glass",
+  "metal",
+  "paper",
+  "plastic",
+  "shoes",
+  "trash"
+]
