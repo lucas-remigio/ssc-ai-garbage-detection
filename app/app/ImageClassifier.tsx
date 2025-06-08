@@ -5,6 +5,7 @@ import * as tf from "@tensorflow/tfjs";
 import { decodeJpeg } from "@tensorflow/tfjs-react-native";
 import * as FileSystem from "expo-file-system";
 import { useModelLoader } from "./useModelLoader";
+import * as ImageManipulator from "expo-image-manipulator";
 
 export default function ImageClassifier() {
   const { model, loading, error } = useModelLoader();
@@ -46,7 +47,9 @@ export default function ImageClassifier() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 1,
+      quality: 1, // Lower quality if needed
+      exif: false, // Don't need metadata
+      base64: false, // Don't get base64 data
     });
 
     if (!result.canceled) {
@@ -75,12 +78,23 @@ export default function ImageClassifier() {
     try {
       setClassifying(true);
       console.log("🕒 [classifyImage] Start");
-      console.time("🕒 classification total");
 
+      // 1) Resize image BEFORE decoding (much faster - uses native code)
+      console.time("🕒 resize");
+      const manipResult = await ImageManipulator.manipulateAsync(
+        image,
+        [{ resize: { width: 128, height: 128 } }],
+        { format: ImageManipulator.SaveFormat.JPEG, compress: 0.8 }
+      );
+      console.timeEnd("🕒 resize");
+
+      const uri = manipResult.uri ?? image;
+
+      console.time("🕒 classification total");
       // 1) Read the image file
-      console.log("📁 Reading image from URI:", image);
+      console.log("📁 Reading image from URI:", uri);
       console.time("🕒 read file");
-      const imgB64 = await FileSystem.readAsStringAsync(image, {
+      const imgB64 = await FileSystem.readAsStringAsync(uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
       console.timeEnd("🕒 read file");
