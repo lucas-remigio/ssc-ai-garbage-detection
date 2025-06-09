@@ -39,6 +39,7 @@ export default function GameTutorial({ onClose }: GameTutorialProps) {
   const buttonOpacity = useRef(new Animated.Value(0)).current;
   const contentTranslateY = useRef(new Animated.Value(0)).current;
 
+
   useEffect(() => {
     if (page === TUTORIAL_PAGES.length - 1) {
       // Animate button opacity and content position simultaneously
@@ -71,6 +72,8 @@ export default function GameTutorial({ onClose }: GameTutorialProps) {
     }
   }, [page]);
 
+
+
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const newPage = Math.round(event.nativeEvent.contentOffset.x / width);
     setPage(newPage);
@@ -79,57 +82,70 @@ export default function GameTutorial({ onClose }: GameTutorialProps) {
   return (
     <View style={styles.overlay}>
       <View style={styles.content}>
-        <Animated.View style={[styles.content, { transform: [{ translateY: contentTranslateY }] }]}>
-          <Animated.FlatList
-            ref={flatListRef}
-            data={TUTORIAL_PAGES}
-            keyExtractor={(_, index) => index.toString()}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={handleScroll}
-            scrollEventThrottle={16}
-            onScroll={Animated.event(
-              [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-              { useNativeDriver: false }
-            )}
-            renderItem={({ item }) => (
-              <View style={styles.page}>
-                <Text style={styles.title}>{item.title}</Text>
-                <Text style={styles.text}>{item.text}</Text>
-              </View>
-            )}
-          />
-          <Animated.View style={[styles.buttonContainer, { opacity: buttonOpacity }]}>
-            {page === TUTORIAL_PAGES.length - 1 && (
-              <Text style={styles.gotIt} onPress={onClose}>
-                Got it!
-              </Text>
-            )}
-          </Animated.View>
+        <Animated.FlatList
+          ref={flatListRef}
+          data={TUTORIAL_PAGES}
+          keyExtractor={(_, index) => index.toString()}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleScroll}
+          scrollEventThrottle={16}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+            { useNativeDriver: false }
+          )}
+          renderItem={({ item }) => (
+            <View style={styles.page}>
+              <Text style={styles.title}>{item.title}</Text>
+              <Text style={styles.text}>{item.text}</Text>
+            </View>
+          )}
+        />
+
+
+
+        <Animated.View style={[styles.buttonContainer, { opacity: buttonOpacity }]}>
+          {page === TUTORIAL_PAGES.length - 1 && (
+            <Text style={styles.gotIt} onPress={onClose}>
+              Got it!
+            </Text>
+          )}
         </Animated.View>
-        {/* Fixed position for the dots */}
+
+
         <View style={styles.indicatorContainer}>
           {TUTORIAL_PAGES.map((_, i) => {
             const inputRange = [(i - 1) * width, i * width, (i + 1) * width];
+
             const scale = scrollX.interpolate({
               inputRange,
               outputRange: [1, 1.5, 1],
               extrapolate: "clamp",
             });
+
             const opacity = scrollX.interpolate({
               inputRange,
               outputRange: [0.3, 1, 0.3],
               extrapolate: "clamp",
             });
+
             return (
               <Animated.View
                 key={i}
-                style={[styles.dot, { transform: [{ scale }], opacity }]}
+                style={[
+                  styles.dot,
+                  {
+                    transform: [{ scale }],
+                    opacity,
+                  },
+                ]}
               />
             );
           })}
         </View>
+
+
       </View>
     </View>
   );
@@ -176,9 +192,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   indicatorContainer: {
-    position: "absolute",
-    bottom: 20,
     flexDirection: "row",
+    marginTop: 10,
   },
   dot: {
     width: 5,
@@ -200,4 +215,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
   },
+
 });

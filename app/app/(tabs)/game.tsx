@@ -15,14 +15,15 @@ export default function GameScreen() {
 
   useEffect(() => {
     (async () => {
-      const seen = await AsyncStorage.getItem("seenGameTutorial");
-      if (!seen) setShowTutorial(true);
+      //const seen = await AsyncStorage.getItem("seenGameTutorial");
+      //if (!seen) setShowTutorial(true);
+      setShowTutorial(true);
     })();
   }, []);
 
   const handleCloseTutorial = async () => {
     setShowTutorial(false);
-    await AsyncStorage.setItem("seenGameTutorial", "true");
+    //await AsyncStorage.setItem("seenGameTutorial", "true");
   };
 
   if (!permission) {
