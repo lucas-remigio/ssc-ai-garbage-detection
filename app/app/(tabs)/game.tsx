@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { StyleSheet, View, Text, TouchableOpacity, Button, Image, Dimensions, ActivityIndicator } from "react-native";
+import { StyleSheet, View, Text, TouchableOpacity, Button, Image, Dimensions, ActivityIndicator, TouchableWithoutFeedback } from "react-native";
 import { CameraView, CameraType, useCameraPermissions, FlashMode } from 'expo-camera';
 import { MaterialIcons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
@@ -7,19 +7,29 @@ import GameTutorial from "@/components/GameTutorial";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BlurView } from 'expo-blur';
 import { Colors } from '@/constants/Colors';
+import { classifyImage } from "@/utils/classifyImage";
+import { classToEcoponto } from "@/constants/ClassToEcoponto";
+import useModelLoader from "../useModelLoader";
+import EcopontoWidget from "@/components/EcopontoWidget";
+import { image } from "@tensorflow/tfjs";
 
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
 
 export default function GameScreen() {
+  const { model, loading, error } = useModelLoader();
   const [facing] = useState<CameraType>('back');
   const [permission, requestPermission] = useCameraPermissions();
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showGameScreen, setShowGameScreen] = useState(false);
   const [flash, setFlash] = useState<FlashMode>('off');
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
   const ref = useRef<CameraView>(null);
-  const [loading, setLoading] = useState(false);
+  const [loadingWidget, setLoadingWidget] = useState(false);
   const [showCloseIcon, setShowCloseIcon] = useState(false);
+  const [classifying, setClassifying] = useState(false);
+  const [ecoponto, setEcoponto] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -38,9 +48,50 @@ export default function GameScreen() {
     setFlash((prevFlash) => prevFlash === 'off' ? 'on' : 'off');
   };
 
+  const classifyTrash = async () => {
+    console.log("🗑️ Classifying image...");
+    setClassifying(true);
+    setLoadingWidget(true);
+    setErrorMessage(null);
+    try {
+      if (!model || !capturedUri) {
+        setErrorMessage('Model or image not available');
+        return;
+      }
+      const classNames = Object.keys(classToEcoponto);
+      const result = await classifyImage({
+        model,
+        image: capturedUri,
+        classNames,
+      });
+      if (!Array.isArray(result)) {
+        setErrorMessage('Error classifying image');
+        return;
+      }
+      const [success, message, confidence] = result;
+
+      if (Number(confidence) < 80){
+        setErrorMessage('Could not classify this image. Try again!');
+        return;
+      }
+
+      if (success) {
+        setEcoponto(classToEcoponto[message] || "Unknown");
+        console.log(`🗑️ This belongs to ${classToEcoponto[message] || "Unknown"} with ${confidence} certainty`);
+        setShowGameScreen(true);
+      } else {
+        setErrorMessage('Could not classify this image. Try again!');
+      }
+    } finally {
+      setClassifying(false);
+      setLoadingWidget(false);
+      setCapturedUri(null);
+    }
+  }
+
   const takePicture = async () => {
     if (loading) return;
-    setLoading(true);
+    setLoadingWidget(true);
 
     try {
       const photo = await ref.current?.takePictureAsync({ skipProcessing: true });
@@ -52,7 +103,7 @@ export default function GameScreen() {
     } catch (error) {
       console.error("Failed to take picture:", error);
     } finally {
-      setLoading(false);
+      setLoadingWidget(false);
     }
   };
 
@@ -84,14 +135,24 @@ export default function GameScreen() {
 
   return (
     <View style={styles.container}>
-      {loading && (
+      {loadingWidget && (
         <View style={styles.loaderContainer}>
           <View style={styles.loaderBackground}>
             <ActivityIndicator size="large" color="white" />
-            <Text style={styles.loaderText}>Taking picture...</Text>
+            <Text style={styles.loaderText}>{classifying ? "Classifying..." : "Taking picture..."}</Text>
           </View>
         </View>
       )}
+      {errorMessage && (
+        <TouchableWithoutFeedback onPress={() => setErrorMessage(null)}>
+          <View style={styles.loaderContainer}>
+            <View style={styles.loaderBackground}>
+              <Text style={styles.loaderText}>{errorMessage}</Text>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      )}
+
       <CameraView 
         style={styles.camera} 
         ref={ref} 
@@ -104,7 +165,9 @@ export default function GameScreen() {
         </View>
       </CameraView>
 
-      {showTutorial && <GameTutorial onClose={handleCloseTutorial} />}
+      {showTutorial && <GameTutorial onClose={handleCloseTutorial} loading={loading} />}
+
+      {showGameScreen && <EcopontoWidget result={ecoponto} image={capturedUri!} />}
 
       <TouchableOpacity style={styles.circleButton} onPress={takePicture} disabled={loading}/>
 
@@ -133,7 +196,7 @@ export default function GameScreen() {
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.scanBtn}
-                    onPress={() => console.log('Scan it pressed')}
+                    onPress={classifyTrash}
                   >
                     <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 18 }}>Scan it</Text>
                   </TouchableOpacity>

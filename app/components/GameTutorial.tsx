@@ -8,11 +8,13 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   Animated,
+  ActivityIndicator,
 } from "react-native";
 import { Colors } from '@/constants/Colors';
 
 interface GameTutorialProps {
   onClose: () => void;
+  loading: boolean;
 }
 
 const TUTORIAL_PAGES = [
@@ -32,7 +34,7 @@ const TUTORIAL_PAGES = [
 
 const { width, height } = Dimensions.get("window");
 
-export default function GameTutorial({ onClose }: GameTutorialProps) {
+export default function GameTutorial({ onClose, loading }: GameTutorialProps) {
   const [page, setPage] = useState(0);
   const scrollX = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<Animated.FlatList<any>>(null);
@@ -42,7 +44,6 @@ export default function GameTutorial({ onClose }: GameTutorialProps) {
 
   useEffect(() => {
     if (page === TUTORIAL_PAGES.length - 1) {
-      // Animate button opacity and content position simultaneously
       Animated.parallel([
         Animated.timing(buttonOpacity, {
           toValue: 1,
@@ -50,13 +51,12 @@ export default function GameTutorial({ onClose }: GameTutorialProps) {
           useNativeDriver: true,
         }),
         Animated.timing(contentTranslateY, {
-          toValue: -50, // Move content upward
+          toValue: -50,
           duration: 400,
           useNativeDriver: true,
         }),
       ]).start();
     } else {
-      // Reset button opacity and content position
       Animated.parallel([
         Animated.timing(buttonOpacity, {
           toValue: 0,
@@ -64,7 +64,7 @@ export default function GameTutorial({ onClose }: GameTutorialProps) {
           useNativeDriver: true,
         }),
         Animated.timing(contentTranslateY, {
-          toValue: 0, // Reset position
+          toValue: 0,
           duration: 200,
           useNativeDriver: true,
         }),
@@ -72,7 +72,16 @@ export default function GameTutorial({ onClose }: GameTutorialProps) {
     }
   }, [page]);
 
-
+  if (loading) {
+    return (
+      <View style={styles.loaderContainer}>
+        <View style={styles.loaderBackground}>
+          <ActivityIndicator size="large" color="white" />
+          <Text style={styles.loaderText}>Loading Model ...</Text>
+        </View>
+      </View>
+    );
+  }
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const newPage = Math.round(event.nativeEvent.contentOffset.x / width);
@@ -214,6 +223,24 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
     textAlign: "center",
+  },
+  loaderContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    zIndex: 10,
+  },
+  loaderBackground: {
+    padding: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  loaderText: {
+    marginTop: 10,
+    color: 'white',
+    fontSize: 16,
   },
 
 });
