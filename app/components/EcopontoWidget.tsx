@@ -36,6 +36,7 @@ export default function EcopontoWidget({
   const [gameFinished, setGameFinished] = useState(false);
 
   const handlePress = (label: string) => {
+    console.log(`Image received: ${image}`);
     if (gameFinished) return;
 
     if (label === result) {
@@ -86,19 +87,26 @@ export default function EcopontoWidget({
       <View style={styles.content}>
         <Text style={styles.title}>Choose the Right Ecoponto!</Text>
 
-        <Image
-          source={{ uri: image }}
-          style={styles.centerImage}
-          resizeMode="contain"
-        />
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: image }}
+            style={styles.centerImage}
+            resizeMode="contain"
+          />
+        </View>
 
-        <View style={styles.trashRow}>
+        <Text style={styles.subtitle}>Where does this item belong?</Text>
+
+        <View style={styles.optionsContainer}>
           {trashTypes.map((trash, index) => (
             <Pressable
               key={index}
-              style={styles.trashItem}
-              onPress={() => handlePress(trash.label)}>
-              <Text style={styles.trashIcon}>{trash.icon}</Text>
+              style={[styles.optionButton, gameFinished && { opacity: 0.6 }]}
+              onPress={() => handlePress(trash.label)}
+              disabled={gameFinished}>
+              <View style={styles.iconContainer}>
+                <Text style={styles.trashIcon}>{trash.icon}</Text>
+              </View>
               <Text style={styles.trashLabel}>{trash.label}</Text>
             </Pressable>
           ))}
@@ -117,57 +125,114 @@ const styles = StyleSheet.create({
     bottom: 0,
     width,
     height,
-    backgroundColor: "rgba(0,0,0,0.7)",
+    backgroundColor: "rgba(0,0,0,0.8)",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 10,
   },
   content: {
     backgroundColor: "#fff",
-    borderRadius: 16,
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    width: width * 0.8,
+    borderRadius: 20,
+    paddingTop: 24,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    width: width * 0.9,
+    maxHeight: height * 0.85,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "bold",
     marginBottom: 16,
     color: "#2E7D32",
     textAlign: "center",
   },
+  imageContainer: {
+    backgroundColor: "#f5f5f5",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: "#e0e0e0",
+  },
   centerImage: {
-    width: 120,
-    height: 120,
+    width: 100,
+    height: 100,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#666",
     marginBottom: 20,
+    textAlign: "center",
   },
-  trashRow: {
+  optionsContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-    marginTop: 10,
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 12,
+    paddingHorizontal: 8,
   },
-  trashItem: {
+  optionButton: {
     alignItems: "center",
-    flex: 1,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    minWidth: 70,
+    borderWidth: 2,
+    borderColor: "#e9ecef",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  iconContainer: {
+    backgroundColor: "#fff",
+    borderRadius: 25,
+    width: 50,
+    height: 50,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#dee2e6",
   },
   trashIcon: {
-    fontSize: 28,
+    fontSize: 24,
   },
   trashLabel: {
-    marginTop: 4,
     fontSize: 12,
-    color: "#555",
+    fontWeight: "600",
+    color: "#495057",
     textAlign: "center",
   },
   animationContainer: {
     backgroundColor: "#fff",
-    borderRadius: 16,
+    borderRadius: 20,
     paddingVertical: 40,
     paddingHorizontal: 32,
     alignItems: "center",
     width: width * 0.8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
   },
   animation: {
     width: 200,

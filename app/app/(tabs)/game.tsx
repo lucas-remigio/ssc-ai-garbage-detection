@@ -25,6 +25,7 @@ import { classifyImage } from "@/utils/classifyImage";
 import { classToEcoponto } from "@/constants/ClassToEcoponto";
 import useModelLoader from "../useModelLoader";
 import EcopontoWidget from "@/components/EcopontoWidget";
+import { useFocusEffect } from "expo-router";
 
 const windowWidth = Dimensions.get("window").width;
 const windowHeight = Dimensions.get("window").height;
@@ -43,6 +44,32 @@ export default function GameScreen() {
   const [classifying, setClassifying] = useState(false);
   const [ecoponto, setEcoponto] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [cameraKey, setCameraKey] = useState(0);
+
+  // Reset camera and state when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      // Reset all states when screen comes into focus
+      setCapturedUri(null);
+      setShowGameScreen(false);
+      setClassifying(false);
+      setLoadingWidget(false);
+      setShowCloseIcon(false);
+      setErrorMessage(null);
+      setEcoponto("");
+
+      // Force camera to re-render by changing key
+      setCameraKey((prev) => prev + 1);
+
+      return () => {
+        // Cleanup when screen loses focus
+        setCapturedUri(null);
+        setShowGameScreen(false);
+        setClassifying(false);
+        setLoadingWidget(false);
+      };
+    }, [])
+  );
 
   useEffect(() => {
     (async () => {
@@ -83,26 +110,22 @@ export default function GameScreen() {
       }
       const [success, message, confidence] = result;
 
-      if (Number(confidence) < 80) {
+      if (Number(confidence) < 80 || !success) {
         setErrorMessage("Could not classify this image. Try again!");
         return;
       }
 
-      if (success) {
-        setEcoponto(classToEcoponto[message] || "Unknown");
-        console.log(
-          `🗑️ This belongs to ${
-            classToEcoponto[message] || "Unknown"
-          } with ${confidence} certainty`
-        );
-        setShowGameScreen(true);
-      } else {
-        setErrorMessage("Could not classify this image. Try again!");
-      }
+      setEcoponto(classToEcoponto[message] || "Unknown");
+      console.log(
+        `🗑️ This belongs to ${
+          classToEcoponto[message] || "Unknown"
+        } with ${confidence} certainty`
+      );
+      setShowGameScreen(true);
     } finally {
       setClassifying(false);
       setLoadingWidget(false);
-      setCapturedUri(null);
+      setFlash("off");
     }
   };
 
@@ -116,6 +139,7 @@ export default function GameScreen() {
       });
       if (photo?.uri) {
         requestAnimationFrame(() => {
+          console.log("📸 Picture taken:", photo.uri);
           setCapturedUri(photo.uri);
         });
       }
@@ -177,6 +201,7 @@ export default function GameScreen() {
       )}
 
       <CameraView
+        key={cameraKey}
         style={styles.camera}
         ref={ref}
         facing={facing}
@@ -197,7 +222,10 @@ export default function GameScreen() {
         <EcopontoWidget
           result={ecoponto}
           image={capturedUri!}
-          onClose={() => setShowGameScreen(false)}
+          onClose={() => {
+            setShowGameScreen(false);
+            setCapturedUri(null);
+          }}
         />
       )}
 
