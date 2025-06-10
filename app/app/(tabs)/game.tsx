@@ -235,6 +235,8 @@ export default function GameScreen() {
           type: "SET_ERROR",
           payload: "Model or image not available",
         });
+        dispatch({ type: "SET_LOADING", payload: false });
+        dispatch({ type: "SET_CLASSIFYING", payload: false });
         return;
       }
 
@@ -247,6 +249,8 @@ export default function GameScreen() {
 
       if (!Array.isArray(result)) {
         dispatch({ type: "SET_ERROR", payload: "Error classifying image" });
+        dispatch({ type: "SET_LOADING", payload: false });
+        dispatch({ type: "SET_CLASSIFYING", payload: false });
         return;
       }
 
@@ -257,6 +261,8 @@ export default function GameScreen() {
           type: "SET_ERROR",
           payload: "Could not classify this image. Try again!",
         });
+        dispatch({ type: "SET_LOADING", payload: false });
+        dispatch({ type: "SET_CLASSIFYING", payload: false });
         return;
       }
 
