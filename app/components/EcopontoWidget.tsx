@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,32 +7,79 @@ import {
   Pressable,
   Image,
 } from "react-native";
-import { Colors } from '@/constants/Colors';
+import LottieView from "lottie-react-native";
 
-interface SimpleTutorialCardProps {
+interface EcopontoWidgetProps {
   result: string;
   image: string; // URL or local path
+  onClose?: () => void;
 }
 
 const { width, height } = Dimensions.get("window");
 
 const trashTypes = [
-  { icon: "🔵", label: "Paper" },
-  { icon: "🟡", label: "Plastic" },
-  { icon: "🟢", label: "Glass" },
+  { icon: "🔵", label: "Blue" },
+  { icon: "🟡", label: "Yellow" },
+  { icon: "🟢", label: "Green" },
   { icon: "🗑️", label: "Trash" },
   { icon: "🔋", label: "Pilhão" },
 ];
 
-export default function SimpleTutorialCard({ result, image }: SimpleTutorialCardProps) {
+export default function EcopontoWidget({
+  result,
+  image,
+  onClose,
+}: EcopontoWidgetProps) {
+  const [showAnimation, setShowAnimation] = useState<"success" | "fail" | null>(
+    null
+  );
+  const [gameFinished, setGameFinished] = useState(false);
+
   const handlePress = (label: string) => {
-    if (label == result){
+    if (gameFinished) return;
+
+    if (label === result) {
       console.log(`Correct!`);
-    }else{
+      setShowAnimation("success");
+    } else {
       console.log(`Wrong!`);
+      setShowAnimation("fail");
     }
-    
+
+    setGameFinished(true);
+
+    // Auto-close after animation completes
+    setTimeout(() => {
+      setShowAnimation(null);
+      onClose?.();
+    }, 3000);
   };
+
+  if (showAnimation) {
+    return (
+      <View style={styles.overlay}>
+        <View style={styles.animationContainer}>
+          <LottieView
+            source={
+              showAnimation === "success"
+                ? require("../assets/animations/success.json")
+                : require("../assets/animations/fail.json")
+            }
+            autoPlay
+            loop={false}
+            style={styles.animation}
+          />
+          <Text
+            style={[
+              styles.animationText,
+              { color: showAnimation === "success" ? "#4CAF50" : "#F44336" },
+            ]}>
+            {showAnimation === "success" ? "Correct!" : "Try Again!"}
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.overlay}>
@@ -50,8 +97,7 @@ export default function SimpleTutorialCard({ result, image }: SimpleTutorialCard
             <Pressable
               key={index}
               style={styles.trashItem}
-              onPress={() => handlePress(trash.label)}
-            >
+              onPress={() => handlePress(trash.label)}>
               <Text style={styles.trashIcon}>{trash.icon}</Text>
               <Text style={styles.trashLabel}>{trash.label}</Text>
             </Pressable>
@@ -114,5 +160,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#555",
     textAlign: "center",
+  },
+  animationContainer: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    paddingVertical: 40,
+    paddingHorizontal: 32,
+    alignItems: "center",
+    width: width * 0.8,
+  },
+  animation: {
+    width: 200,
+    height: 200,
+  },
+  animationText: {
+    fontSize: 28,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginTop: 16,
   },
 });
