@@ -109,7 +109,7 @@ export default function EcopontoWidget({
           <TouchableOpacity
             style={styles.animationCloseButton}
             onPress={handleClose}>
-            <MaterialIcons name="close" size={24} color="#666" />
+            <MaterialIcons name="close" size={24} color="white" />
           </TouchableOpacity>
 
           <LottieView
@@ -145,7 +145,7 @@ export default function EcopontoWidget({
       <View style={styles.content}>
         {/* Close button */}
         <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-          <MaterialIcons name="close" size={24} color="#666" />
+          <MaterialIcons name="close" size={24} color="white" />
         </TouchableOpacity>
 
         <Text style={styles.title}>Choose the Right Ecoponto!</Text>
@@ -248,23 +248,15 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: "absolute",
-    top: 16,
-    right: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#f5f5f5",
+    top: -8,
+    left: -8,
+    backgroundColor: "red",
+    borderRadius: 20,
+    width: 30,
+    height: 30,
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 1,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    zIndex: 2,
   },
   title: {
     fontSize: 22,
@@ -272,7 +264,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     color: "#2E7D32",
     textAlign: "center",
-    paddingRight: 40, // Add padding to avoid overlap with close button
+    paddingLeft: 40, // Add padding to avoid overlap with close button
   },
   imageContainer: {
     backgroundColor: "#f5f5f5",
@@ -409,23 +401,15 @@ const styles = StyleSheet.create({
   },
   animationCloseButton: {
     position: "absolute",
-    top: 16,
-    right: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#f5f5f5",
+    top: -8,
+    left: -8,
+    backgroundColor: "red",
+    borderRadius: 20,
+    width: 30,
+    height: 30,
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 1,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    zIndex: 2,
   },
   animation: {
     width: 150,
