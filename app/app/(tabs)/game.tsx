@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState, useEffect, useReducer, useCallback } from "react";
 import {
   StyleSheet,
   View,
@@ -23,166 +23,288 @@ import { BlurView } from "expo-blur";
 import { Colors } from "@/constants/Colors";
 import { classifyImage } from "@/utils/classifyImage";
 import { classToEcoponto } from "@/constants/ClassToEcoponto";
+// eslint-disable-next-line import/no-named-as-default
 import useModelLoader from "../useModelLoader";
 import EcopontoWidget from "@/components/EcopontoWidget";
 import { useFocusEffect } from "expo-router";
+import { useGameCamera } from "@/hooks/useGameCamera";
 
-const windowWidth = Dimensions.get("window").width;
-const windowHeight = Dimensions.get("window").height;
+// Constants
+const { width: windowWidth, height: windowHeight } = Dimensions.get("window");
+const CONFIDENCE_THRESHOLD = 60;
+const CLOSE_ICON_DELAY = 500;
+
+// State management
+interface GameState {
+  showTutorial: boolean;
+  showGameScreen: boolean;
+  flash: FlashMode;
+  capturedUri: string | null;
+  showCapturedUriScan: boolean;
+  classifiedItem: string;
+  loadingWidget: boolean;
+  showCloseIcon: boolean;
+  classifying: boolean;
+  ecoponto: string;
+  errorMessage: string | null;
+  cameraKey: number;
+}
+
+type GameAction =
+  | { type: "RESET_ALL" }
+  | { type: "SET_TUTORIAL"; payload: boolean }
+  | { type: "SET_FLASH"; payload: FlashMode }
+  | { type: "SET_CAPTURED_URI"; payload: string | null }
+  | { type: "SET_LOADING"; payload: boolean }
+  | { type: "SET_CLASSIFYING"; payload: boolean }
+  | { type: "SET_ERROR"; payload: string | null }
+  | {
+      type: "SET_CLASSIFICATION_RESULT";
+      payload: { item: string; ecoponto: string };
+    }
+  | { type: "SHOW_PREVIEW" }
+  | { type: "SHOW_CLOSE_ICON"; payload: boolean }
+  | { type: "INCREMENT_CAMERA_KEY" };
+
+const initialState: GameState = {
+  showTutorial: false,
+  showGameScreen: false,
+  flash: "off",
+  capturedUri: null,
+  showCapturedUriScan: false,
+  classifiedItem: "",
+  loadingWidget: false,
+  showCloseIcon: false,
+  classifying: false,
+  ecoponto: "",
+  errorMessage: null,
+  cameraKey: 0,
+};
+
+function gameReducer(state: GameState, action: GameAction): GameState {
+  switch (action.type) {
+    case "RESET_ALL":
+      return {
+        ...initialState,
+        cameraKey: state.cameraKey,
+      };
+    case "SET_TUTORIAL":
+      return { ...state, showTutorial: action.payload };
+    case "SET_FLASH":
+      return { ...state, flash: action.payload };
+    case "SET_CAPTURED_URI":
+      return { ...state, capturedUri: action.payload };
+    case "SET_LOADING":
+      return { ...state, loadingWidget: action.payload };
+    case "SET_CLASSIFYING":
+      return { ...state, classifying: action.payload };
+    case "SET_ERROR":
+      return { ...state, errorMessage: action.payload };
+    case "SET_CLASSIFICATION_RESULT":
+      return {
+        ...state,
+        classifiedItem: action.payload.item,
+        ecoponto: action.payload.ecoponto,
+        showGameScreen: true,
+        classifying: false,
+        loadingWidget: false,
+        showCapturedUriScan: false,
+        flash: "off",
+      };
+    case "SHOW_PREVIEW":
+      return {
+        ...state,
+        showCapturedUriScan: true,
+        showCloseIcon: false,
+      };
+    case "SHOW_CLOSE_ICON":
+      return { ...state, showCloseIcon: action.payload };
+    case "INCREMENT_CAMERA_KEY":
+      return { ...state, cameraKey: state.cameraKey + 1 };
+    default:
+      return state;
+  }
+}
+
+// Reusable Components
+const LoadingOverlay = ({ message }: { message: string }) => (
+  <View style={styles.loaderContainer}>
+    <View style={styles.loaderBackground}>
+      <ActivityIndicator size="large" color="white" />
+      <Text style={styles.loaderText}>{message}</Text>
+    </View>
+  </View>
+);
+
+const ErrorOverlay = ({
+  message,
+  onDismiss,
+}: {
+  message: string;
+  onDismiss: () => void;
+}) => (
+  <TouchableWithoutFeedback onPress={onDismiss}>
+    <View style={styles.loaderContainer}>
+      <View style={styles.loaderBackground}>
+        <Text style={styles.loaderText}>{message}</Text>
+      </View>
+    </View>
+  </TouchableWithoutFeedback>
+);
+
+const PreviewOverlay = ({
+  capturedUri,
+  showCloseIcon,
+  onDismiss,
+  onScan,
+}: {
+  capturedUri: string;
+  showCloseIcon: boolean;
+  onDismiss: () => void;
+  onScan: () => void;
+}) => (
+  <View style={StyleSheet.absoluteFill}>
+    <BlurView intensity={50} style={StyleSheet.absoluteFill} tint="dark" />
+    <View style={styles.previewOverlay} pointerEvents="box-none">
+      <View style={styles.imageWrapper}>
+        <Image
+          source={{ uri: capturedUri }}
+          style={styles.previewImage}
+          resizeMode="contain"
+        />
+        {showCloseIcon && (
+          <>
+            <TouchableOpacity style={styles.closeIcon} onPress={onDismiss}>
+              <MaterialIcons name="close" size={24} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.scanBtn} onPress={onScan}>
+              <Text style={styles.scanBtnText}>Scan it</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+    </View>
+  </View>
+);
 
 export default function GameScreen() {
   const { model, loading } = useModelLoader();
+  const { cameraRef, takePicture: takeCameraPicture } = useGameCamera();
   const [facing] = useState<CameraType>("back");
   const [permission, requestPermission] = useCameraPermissions();
-  const [showTutorial, setShowTutorial] = useState(false);
-  const [showGameScreen, setShowGameScreen] = useState(false);
-  const [flash, setFlash] = useState<FlashMode>("off");
-  const [capturedUri, setCapturedUri] = useState<string | null>(null);
-  const [showCapturedUriScan, setShowCapturedUriScan] = useState(false);
-  const [classifiedItem, setClassifiedItem] = useState<string>("");
-  const ref = useRef<CameraView>(null);
-  const [loadingWidget, setLoadingWidget] = useState(false);
-  const [showCloseIcon, setShowCloseIcon] = useState(false);
-  const [classifying, setClassifying] = useState(false);
-  const [ecoponto, setEcoponto] = useState("");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [cameraKey, setCameraKey] = useState(0);
+  const [state, dispatch] = useReducer(gameReducer, initialState);
+
+  const resetAllStates = useCallback(() => {
+    dispatch({ type: "RESET_ALL" });
+  }, []);
 
   // Reset camera and state when screen is focused
   useFocusEffect(
-    React.useCallback(() => {
-      // Reset all states when screen comes into focus
-      setCapturedUri(null);
-      setShowGameScreen(false);
-      setClassifying(false);
-      setLoadingWidget(false);
-      setShowCloseIcon(false);
-      setErrorMessage(null);
-      setFlash("off");
-      setShowCapturedUriScan(false);
-      setClassifiedItem("");
-      setEcoponto("");
-
-      // Force camera to re-render by changing key
-      setCameraKey((prev) => prev + 1);
+    useCallback(() => {
+      resetAllStates();
+      dispatch({ type: "INCREMENT_CAMERA_KEY" });
 
       return () => {
-        // Cleanup when screen loses focus
-        setCapturedUri(null);
-        setShowGameScreen(false);
-        setClassifying(false);
-        setLoadingWidget(false);
-        setShowCloseIcon(false);
-        setErrorMessage(null);
-        setFlash("off");
-        setShowCapturedUriScan(false);
-        setClassifiedItem("");
-        setEcoponto("");
-        setCameraKey(0);
+        resetAllStates();
       };
-    }, [])
+    }, [resetAllStates])
   );
 
   useEffect(() => {
-    (async () => {
-      //const seen = await AsyncStorage.getItem("seenGameTutorial");
-      //if (!seen) setShowTutorial(true);
-      setShowTutorial(true);
-    })();
+    dispatch({ type: "SET_TUTORIAL", payload: true });
   }, []);
 
-  const handleCloseTutorial = async () => {
-    setShowTutorial(false);
-    //await AsyncStorage.setItem("seenGameTutorial", "true");
-  };
+  const handleCloseTutorial = useCallback(() => {
+    dispatch({ type: "SET_TUTORIAL", payload: false });
+  }, []);
 
-  const toggleFlash = () => {
-    setFlash((prevFlash) => (prevFlash === "off" ? "on" : "off"));
-  };
+  const toggleFlash = useCallback(() => {
+    const newFlash = state.flash === "off" ? "on" : "off";
+    dispatch({ type: "SET_FLASH", payload: newFlash });
+  }, [state.flash]);
 
-  const classifyTrash = async () => {
+  const classifyTrash = useCallback(async () => {
     console.log("🗑️ Classifying image...");
-    setClassifying(true);
-    setLoadingWidget(true);
-    setErrorMessage(null);
-    setClassifiedItem("");
+    dispatch({ type: "SET_CLASSIFYING", payload: true });
+    dispatch({ type: "SET_LOADING", payload: true });
+    dispatch({ type: "SET_ERROR", payload: null });
+
     try {
-      if (!model || !capturedUri) {
-        setErrorMessage("Model or image not available");
+      if (!model || !state.capturedUri) {
+        dispatch({
+          type: "SET_ERROR",
+          payload: "Model or image not available",
+        });
         return;
       }
+
       const classNames = Object.keys(classToEcoponto);
       const result = await classifyImage({
         model,
-        image: capturedUri,
+        image: state.capturedUri,
         classNames,
       });
+
       if (!Array.isArray(result)) {
-        setErrorMessage("Error classifying image");
+        dispatch({ type: "SET_ERROR", payload: "Error classifying image" });
         return;
       }
+
       const [success, message, confidence] = result;
 
-      if (Number(confidence) < 60 || !success) {
-        setErrorMessage("Could not classify this image. Try again!");
+      if (Number(confidence) < CONFIDENCE_THRESHOLD || !success) {
+        dispatch({
+          type: "SET_ERROR",
+          payload: "Could not classify this image. Try again!",
+        });
         return;
       }
 
-      setEcoponto(classToEcoponto[message] || "Unknown");
+      const ecopontoResult = classToEcoponto[message] || "Unknown";
       console.log(
-        `🗑️ This belongs to ${
-          classToEcoponto[message] || "Unknown"
-        } with ${confidence} certainty`
+        `🗑️ This belongs to ${ecopontoResult} with ${confidence} certainty`
       );
-      setClassifiedItem(message);
-      setShowGameScreen(true);
-    } finally {
-      setClassifying(false);
-      setLoadingWidget(false);
-      setShowCapturedUriScan(false);
-      setFlash("off");
-    }
-  };
 
-  const takePicture = async () => {
-    if (loading) return;
-    setLoadingWidget(true);
-
-    try {
-      const photo = await ref.current?.takePictureAsync({
-        skipProcessing: true,
-        exif: false,
-        base64: false,
+      dispatch({
+        type: "SET_CLASSIFICATION_RESULT",
+        payload: { item: message, ecoponto: ecopontoResult },
       });
-      if (photo?.uri) {
-        requestAnimationFrame(() => {
-          console.log("📸 Picture taken:", photo.uri);
-          setCapturedUri(photo.uri);
-          setShowCapturedUriScan(true);
-        });
-      }
-    } catch (error) {
-      console.error("Failed to take picture:", error);
-    } finally {
-      setLoadingWidget(false);
+    } catch {
+      dispatch({ type: "SET_ERROR", payload: "Error during classification" });
     }
-  };
+  }, [model, state.capturedUri]);
 
-  const handleDismissPreview = () => {
-    setTimeout(() => {}, 100);
-    setCapturedUri(null);
-  };
+  const takePicture = useCallback(async () => {
+    if (loading) return;
+    dispatch({ type: "SET_LOADING", payload: true });
+
+    const photoUri = await takeCameraPicture();
+
+    if (photoUri) {
+      requestAnimationFrame(() => {
+        console.log("📸 Picture taken:", photoUri);
+        dispatch({ type: "SET_CAPTURED_URI", payload: photoUri });
+        dispatch({ type: "SHOW_PREVIEW" });
+      });
+    }
+
+    dispatch({ type: "SET_LOADING", payload: false });
+  }, [loading, takeCameraPicture]);
+
+  const handleDismissPreview = useCallback(() => {
+    dispatch({ type: "SET_CAPTURED_URI", payload: null });
+  }, []);
 
   // Show close icon and scan button with delay when capturedUri changes
   useEffect(() => {
-    if (capturedUri) {
-      setShowCloseIcon(false);
-      const timeout = setTimeout(() => setShowCloseIcon(true), 500); // 500ms delay
+    if (state.capturedUri) {
+      const timeout = setTimeout(
+        () => dispatch({ type: "SHOW_CLOSE_ICON", payload: true }),
+        CLOSE_ICON_DELAY
+      );
       return () => clearTimeout(timeout);
-    } else {
-      setShowCloseIcon(false);
     }
-  }, [capturedUri]);
+  }, [state.capturedUri]);
 
   if (!permission) return <View />;
   if (!permission.granted) {
@@ -198,33 +320,26 @@ export default function GameScreen() {
 
   return (
     <View style={styles.container}>
-      {loadingWidget && (
-        <View style={styles.loaderContainer}>
-          <View style={styles.loaderBackground}>
-            <ActivityIndicator size="large" color="white" />
-            <Text style={styles.loaderText}>
-              {classifying ? "Classifying..." : "Taking picture..."}
-            </Text>
-          </View>
-        </View>
+      {state.loadingWidget && (
+        <LoadingOverlay
+          message={state.classifying ? "Classifying..." : "Taking picture..."}
+        />
       )}
-      {errorMessage && (
-        <TouchableWithoutFeedback onPress={() => setErrorMessage(null)}>
-          <View style={styles.loaderContainer}>
-            <View style={styles.loaderBackground}>
-              <Text style={styles.loaderText}>{errorMessage}</Text>
-            </View>
-          </View>
-        </TouchableWithoutFeedback>
+
+      {state.errorMessage && (
+        <ErrorOverlay
+          message={state.errorMessage}
+          onDismiss={() => dispatch({ type: "SET_ERROR", payload: null })}
+        />
       )}
 
       <CameraView
-        key={cameraKey}
+        key={state.cameraKey}
         style={styles.camera}
-        ref={ref}
+        ref={cameraRef}
         facing={facing}
-        flash={flash}
-        enableTorch={flash === "on"}>
+        flash={state.flash}
+        enableTorch={state.flash === "on"}>
         <View style={styles.overlayContainer}>
           <Text style={styles.text}>
             Scan the trash item to start recycling
@@ -232,19 +347,17 @@ export default function GameScreen() {
         </View>
       </CameraView>
 
-      {showTutorial && (
+      {state.showTutorial && (
         <GameTutorial onClose={handleCloseTutorial} loading={loading} />
       )}
 
-      {showGameScreen && (
+      {state.showGameScreen && (
         <EcopontoWidget
-          result={ecoponto}
-          image={capturedUri!}
-          classifiedItem={classifiedItem}
+          result={state.ecoponto}
+          image={state.capturedUri!}
+          classifiedItem={state.classifiedItem}
           onClose={() => {
-            setShowGameScreen(false);
-            setCapturedUri(null);
-            setClassifiedItem("");
+            dispatch({ type: "RESET_ALL" });
           }}
         />
       )}
@@ -260,50 +373,19 @@ export default function GameScreen() {
         onPress={toggleFlash}
         disabled={loading}>
         <MaterialIcons
-          name={flash === "off" ? "flash-off" : "flash-on"}
+          name={state.flash === "off" ? "flash-off" : "flash-on"}
           size={30}
           color="white"
         />
       </TouchableOpacity>
 
-      {showCapturedUriScan && capturedUri && (
-        <View style={StyleSheet.absoluteFill}>
-          <BlurView
-            intensity={50}
-            style={StyleSheet.absoluteFill}
-            tint="dark"
-          />
-          <View style={styles.previewOverlay} pointerEvents="box-none">
-            <View style={styles.imageWrapper}>
-              <Image
-                source={{ uri: capturedUri }}
-                style={styles.previewImage}
-                resizeMode="contain"
-              />
-              {showCloseIcon && (
-                <>
-                  <TouchableOpacity
-                    style={styles.closeIcon}
-                    onPress={handleDismissPreview}>
-                    <MaterialIcons name="close" size={24} color="white" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.scanBtn}
-                    onPress={classifyTrash}>
-                    <Text
-                      style={{
-                        color: "#fff",
-                        fontWeight: "bold",
-                        fontSize: 18,
-                      }}>
-                      Scan it
-                    </Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-          </View>
-        </View>
+      {state.showCapturedUriScan && state.capturedUri && (
+        <PreviewOverlay
+          capturedUri={state.capturedUri}
+          showCloseIcon={state.showCloseIcon}
+          onDismiss={handleDismissPreview}
+          onScan={classifyTrash}
+        />
       )}
     </View>
   );
@@ -417,5 +499,10 @@ const styles = StyleSheet.create({
     bottom: -15,
     alignSelf: "center", // center horizontally
     alignItems: "center",
+  },
+  scanBtnText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 18,
   },
 });
