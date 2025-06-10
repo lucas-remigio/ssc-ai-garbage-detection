@@ -48,41 +48,49 @@ export default function EcopontoWidget({
     if (gameFinished) return;
 
     if (label === result) {
-      console.log(`Correct!`);
-      setSelectedCorrectOption(label);
-      setShowAnimation("success");
+      handleCorrectAnswer(label);
+    } else {
+      handleIncorrectAnswer(label);
+    }
+  };
+
+  const handleCorrectAnswer = (label: string) => {
+    console.log(`Correct!`);
+    setSelectedCorrectOption(label);
+    setShowAnimation("success");
+    setGameFinished(true);
+
+    // Auto-close after animation completes
+    setTimeout(() => {
+      setShowAnimation(null);
+      onClose?.();
+    }, 4000); // Increased to 4 seconds to allow reading the success message
+  };
+
+  const handleIncorrectAnswer = (label: string) => {
+    console.log(`Wrong! Selected: ${label}, Correct: ${result}`);
+
+    // Add to incorrect selections
+    setIncorrectSelections((prev) => [...prev, label]);
+
+    // Show feedback message
+    setFeedbackMessage(`${label} is incorrect. Try again!`);
+
+    // Clear feedback message after 2 seconds
+    setTimeout(() => {
+      setFeedbackMessage(null);
+    }, 2000);
+
+    // If user has tried 3 wrong answers, show fail animation
+    if (incorrectSelections.length >= 2) {
+      // 2 because we haven't added current selection yet
+      setShowAnimation("fail");
       setGameFinished(true);
 
-      // Auto-close after animation completes
       setTimeout(() => {
         setShowAnimation(null);
         onClose?.();
-      }, 4000); // Increased to 4 seconds to allow reading the success message
-    } else {
-      console.log(`Wrong! Selected: ${label}, Correct: ${result}`);
-
-      // Add to incorrect selections
-      setIncorrectSelections((prev) => [...prev, label]);
-
-      // Show feedback message
-      setFeedbackMessage(`${label} is incorrect. Try again!`);
-
-      // Clear feedback message after 2 seconds
-      setTimeout(() => {
-        setFeedbackMessage(null);
-      }, 2000);
-
-      // If user has tried 3 wrong answers, show fail animation
-      if (incorrectSelections.length >= 2) {
-        // 2 because we haven't added current selection yet
-        setShowAnimation("fail");
-        setGameFinished(true);
-
-        setTimeout(() => {
-          setShowAnimation(null);
-          onClose?.();
-        }, 3000);
-      }
+      }, 3000);
     }
   };
 
@@ -91,27 +99,63 @@ export default function EcopontoWidget({
     onClose?.();
   };
 
+  const getItemName = () => classifiedItem || "item";
+
   const getSuccessMessage = () => {
-    const itemName = classifiedItem || "item";
-    return `Very good! The image was a ${itemName}, so the ${selectedCorrectOption} ecoponto is correct!`;
+    return `Very good! The image was a ${getItemName()}, so the ${selectedCorrectOption} ecoponto is correct!`;
   };
 
   const getErrorMessage = () => {
-    const itemName = classifiedItem || "item";
-    return `Oops! The image was a ${itemName}, so the correct answer was ${result}.`;
+    return `Oops! The image was a ${getItemName()}, so the correct answer was ${result}.`;
+  };
+
+  // Reusable close button component
+  const CloseButton = ({ style }: { style: any }) => (
+    <TouchableOpacity style={style} onPress={handleClose}>
+      <MaterialIcons name="close" size={24} color="white" />
+    </TouchableOpacity>
+  );
+
+  // Reusable option button component
+  const OptionButton = ({
+    trash,
+    index,
+  }: {
+    trash: { icon: string; label: string };
+    index: number;
+  }) => {
+    const isIncorrect = incorrectSelections.includes(trash.label);
+    const isDisabled = gameFinished || isIncorrect;
+
+    return (
+      <Pressable
+        key={index}
+        style={[
+          styles.optionButton,
+          gameFinished && { opacity: 0.6 },
+          isIncorrect && styles.incorrectOption,
+        ]}
+        onPress={() => handlePress(trash.label)}
+        disabled={isDisabled}>
+        <View style={styles.iconContainer}>
+          <Text style={styles.trashIcon}>{trash.icon}</Text>
+          {isIncorrect && (
+            <View style={styles.incorrectMark}>
+              <Text style={styles.incorrectMarkText}>✗</Text>
+            </View>
+          )}
+        </View>
+        <Text style={styles.trashLabel}>{trash.label}</Text>
+      </Pressable>
+    );
   };
 
   if (showAnimation) {
     return (
       <View style={styles.overlay}>
         <View style={styles.animationContainer}>
-          {/* Close button for animation screen */}
-          <TouchableOpacity
-            style={styles.animationCloseButton}
-            onPress={handleClose}>
-            <MaterialIcons name="close" size={24} color="white" />
-          </TouchableOpacity>
-
+          {/* Close button */}
+          <CloseButton style={styles.closeButton} />
           <LottieView
             source={
               showAnimation === "success"
@@ -144,9 +188,7 @@ export default function EcopontoWidget({
     <View style={styles.overlay}>
       <View style={styles.content}>
         {/* Close button */}
-        <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-          <MaterialIcons name="close" size={24} color="white" />
-        </TouchableOpacity>
+        <CloseButton style={styles.closeButton} />
 
         <Text style={styles.title}>Choose the Right Ecoponto!</Text>
 
@@ -184,28 +226,7 @@ export default function EcopontoWidget({
 
         <View style={styles.optionsContainer}>
           {trashTypes.map((trash, index) => (
-            <Pressable
-              key={index}
-              style={[
-                styles.optionButton,
-                gameFinished && { opacity: 0.6 },
-                incorrectSelections.includes(trash.label) &&
-                  styles.incorrectOption,
-              ]}
-              onPress={() => handlePress(trash.label)}
-              disabled={
-                gameFinished || incorrectSelections.includes(trash.label)
-              }>
-              <View style={styles.iconContainer}>
-                <Text style={styles.trashIcon}>{trash.icon}</Text>
-                {incorrectSelections.includes(trash.label) && (
-                  <View style={styles.incorrectMark}>
-                    <Text style={styles.incorrectMarkText}>✗</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={styles.trashLabel}>{trash.label}</Text>
-            </Pressable>
+            <OptionButton key={index} trash={trash} index={index} />
           ))}
         </View>
       </View>
@@ -398,18 +419,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 10,
-  },
-  animationCloseButton: {
-    position: "absolute",
-    top: -8,
-    left: -8,
-    backgroundColor: "red",
-    borderRadius: 20,
-    width: 30,
-    height: 30,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 2,
   },
   animation: {
     width: 150,
