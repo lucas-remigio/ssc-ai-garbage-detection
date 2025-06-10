@@ -34,26 +34,48 @@ export default function EcopontoWidget({
     null
   );
   const [gameFinished, setGameFinished] = useState(false);
+  const [incorrectSelections, setIncorrectSelections] = useState<string[]>([]);
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
   const handlePress = (label: string) => {
-    console.log(`Image received: ${image}`);
     if (gameFinished) return;
 
     if (label === result) {
       console.log(`Correct!`);
       setShowAnimation("success");
+      setGameFinished(true);
+
+      // Auto-close after animation completes
+      setTimeout(() => {
+        setShowAnimation(null);
+        onClose?.();
+      }, 3000);
     } else {
-      console.log(`Wrong!`);
-      setShowAnimation("fail");
+      console.log(`Wrong! Selected: ${label}, Correct: ${result}`);
+
+      // Add to incorrect selections
+      setIncorrectSelections((prev) => [...prev, label]);
+
+      // Show feedback message
+      setFeedbackMessage(`${label} is incorrect. Try again!`);
+
+      // Clear feedback message after 2 seconds
+      setTimeout(() => {
+        setFeedbackMessage(null);
+      }, 2000);
+
+      // If user has tried 3 wrong answers, show fail animation
+      if (incorrectSelections.length >= 2) {
+        // 2 because we haven't added current selection yet
+        setShowAnimation("fail");
+        setGameFinished(true);
+
+        setTimeout(() => {
+          setShowAnimation(null);
+          onClose?.();
+        }, 3000);
+      }
     }
-
-    setGameFinished(true);
-
-    // Auto-close after animation completes
-    setTimeout(() => {
-      setShowAnimation(null);
-      onClose?.();
-    }, 3000);
   };
 
   if (showAnimation) {
@@ -75,7 +97,9 @@ export default function EcopontoWidget({
               styles.animationText,
               { color: showAnimation === "success" ? "#4CAF50" : "#F44336" },
             ]}>
-            {showAnimation === "success" ? "Correct!" : "Try Again!"}
+            {showAnimation === "success"
+              ? "Correct!"
+              : "Game Over - Try Again!"}
           </Text>
         </View>
       </View>
@@ -97,15 +121,41 @@ export default function EcopontoWidget({
 
         <Text style={styles.subtitle}>Where does this item belong?</Text>
 
+        {/* Feedback message */}
+        {feedbackMessage && (
+          <View style={styles.feedbackContainer}>
+            <Text style={styles.feedbackText}>{feedbackMessage}</Text>
+          </View>
+        )}
+
+        {/* Attempts indicator */}
+        {incorrectSelections.length > 0 && (
+          <Text style={styles.attemptsText}>
+            Attempts: {incorrectSelections.length}/3
+          </Text>
+        )}
+
         <View style={styles.optionsContainer}>
           {trashTypes.map((trash, index) => (
             <Pressable
               key={index}
-              style={[styles.optionButton, gameFinished && { opacity: 0.6 }]}
+              style={[
+                styles.optionButton,
+                gameFinished && { opacity: 0.6 },
+                incorrectSelections.includes(trash.label) &&
+                  styles.incorrectOption,
+              ]}
               onPress={() => handlePress(trash.label)}
-              disabled={gameFinished}>
+              disabled={
+                gameFinished || incorrectSelections.includes(trash.label)
+              }>
               <View style={styles.iconContainer}>
                 <Text style={styles.trashIcon}>{trash.icon}</Text>
+                {incorrectSelections.includes(trash.label) && (
+                  <View style={styles.incorrectMark}>
+                    <Text style={styles.incorrectMarkText}>✗</Text>
+                  </View>
+                )}
               </View>
               <Text style={styles.trashLabel}>{trash.label}</Text>
             </Pressable>
@@ -173,6 +223,27 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
   },
+  feedbackContainer: {
+    backgroundColor: "#ffebee",
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: "#f44336",
+  },
+  feedbackText: {
+    color: "#c62828",
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  attemptsText: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 16,
+    textAlign: "center",
+  },
   optionsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -198,6 +269,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  incorrectOption: {
+    backgroundColor: "#ffebee",
+    borderColor: "#f44336",
+    opacity: 0.7,
+  },
   iconContainer: {
     backgroundColor: "#fff",
     borderRadius: 25,
@@ -208,6 +284,23 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderWidth: 1,
     borderColor: "#dee2e6",
+    position: "relative",
+  },
+  incorrectMark: {
+    position: "absolute",
+    top: -5,
+    right: -5,
+    backgroundColor: "#f44336",
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  incorrectMarkText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
   },
   trashIcon: {
     fontSize: 24,

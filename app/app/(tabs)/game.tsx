@@ -136,6 +136,8 @@ export default function GameScreen() {
     try {
       const photo = await ref.current?.takePictureAsync({
         skipProcessing: true,
+        exif: false,
+        base64: false,
       });
       if (photo?.uri) {
         requestAnimationFrame(() => {
