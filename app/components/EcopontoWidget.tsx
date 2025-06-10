@@ -6,13 +6,16 @@ import {
   Dimensions,
   Pressable,
   Image,
+  TouchableOpacity,
 } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 
 interface EcopontoWidgetProps {
   result: string;
   image: string; // URL or local path
   onClose?: () => void;
+  classifiedItem?: string; // Add this prop to receive the classified item name
 }
 
 const { width, height } = Dimensions.get("window");
@@ -29,6 +32,7 @@ export default function EcopontoWidget({
   result,
   image,
   onClose,
+  classifiedItem,
 }: EcopontoWidgetProps) {
   const [showAnimation, setShowAnimation] = useState<"success" | "fail" | null>(
     null
@@ -36,12 +40,16 @@ export default function EcopontoWidget({
   const [gameFinished, setGameFinished] = useState(false);
   const [incorrectSelections, setIncorrectSelections] = useState<string[]>([]);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const [selectedCorrectOption, setSelectedCorrectOption] = useState<
+    string | null
+  >(null);
 
   const handlePress = (label: string) => {
     if (gameFinished) return;
 
     if (label === result) {
       console.log(`Correct!`);
+      setSelectedCorrectOption(label);
       setShowAnimation("success");
       setGameFinished(true);
 
@@ -49,7 +57,7 @@ export default function EcopontoWidget({
       setTimeout(() => {
         setShowAnimation(null);
         onClose?.();
-      }, 3000);
+      }, 4000); // Increased to 4 seconds to allow reading the success message
     } else {
       console.log(`Wrong! Selected: ${label}, Correct: ${result}`);
 
@@ -78,10 +86,32 @@ export default function EcopontoWidget({
     }
   };
 
+  const handleClose = () => {
+    setShowAnimation(null);
+    onClose?.();
+  };
+
+  const getSuccessMessage = () => {
+    const itemName = classifiedItem || "item";
+    return `Very good! The image was a ${itemName}, so the ${selectedCorrectOption} ecoponto is correct!`;
+  };
+
+  const getErrorMessage = () => {
+    const itemName = classifiedItem || "item";
+    return `Oops! The image was a ${itemName}, so the correct answer was ${result}.`;
+  };
+
   if (showAnimation) {
     return (
       <View style={styles.overlay}>
         <View style={styles.animationContainer}>
+          {/* Close button for animation screen */}
+          <TouchableOpacity
+            style={styles.animationCloseButton}
+            onPress={handleClose}>
+            <MaterialIcons name="close" size={24} color="#666" />
+          </TouchableOpacity>
+
           <LottieView
             source={
               showAnimation === "success"
@@ -94,13 +124,17 @@ export default function EcopontoWidget({
           />
           <Text
             style={[
-              styles.animationText,
+              styles.animationTitle,
               { color: showAnimation === "success" ? "#4CAF50" : "#F44336" },
             ]}>
-            {showAnimation === "success"
-              ? "Correct!"
-              : "Game Over - Try Again!"}
+            {showAnimation === "success" ? "Correct!" : "Game Over"}
           </Text>
+          {showAnimation === "success" && (
+            <Text style={styles.successMessage}>{getSuccessMessage()}</Text>
+          )}
+          {showAnimation === "fail" && (
+            <Text style={styles.failMessage}>{getErrorMessage()}</Text>
+          )}
         </View>
       </View>
     );
@@ -109,6 +143,11 @@ export default function EcopontoWidget({
   return (
     <View style={styles.overlay}>
       <View style={styles.content}>
+        {/* Close button */}
+        <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+          <MaterialIcons name="close" size={24} color="#666" />
+        </TouchableOpacity>
+
         <Text style={styles.title}>Choose the Right Ecoponto!</Text>
 
         <View style={styles.imageContainer}>
@@ -120,6 +159,14 @@ export default function EcopontoWidget({
         </View>
 
         <Text style={styles.subtitle}>Where does this item belong?</Text>
+
+        {/* Show classified item if available */}
+        {classifiedItem && (
+          <Text style={styles.classifiedText}>
+            Detected:{" "}
+            <Text style={styles.classifiedItem}>{classifiedItem}</Text>
+          </Text>
+        )}
 
         {/* Feedback message */}
         {feedbackMessage && (
@@ -189,6 +236,7 @@ const styles = StyleSheet.create({
     width: width * 0.9,
     maxHeight: height * 0.85,
     alignItems: "center",
+    position: "relative",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -198,12 +246,33 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 10,
   },
+  closeButton: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#f5f5f5",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
   title: {
     fontSize: 22,
     fontWeight: "bold",
     marginBottom: 16,
     color: "#2E7D32",
     textAlign: "center",
+    paddingRight: 40, // Add padding to avoid overlap with close button
   },
   imageContainer: {
     backgroundColor: "#f5f5f5",
@@ -220,8 +289,18 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: "#666",
-    marginBottom: 20,
+    marginBottom: 12,
     textAlign: "center",
+  },
+  classifiedText: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  classifiedItem: {
+    fontWeight: "bold",
+    color: "#2E7D32",
   },
   feedbackContainer: {
     backgroundColor: "#ffebee",
@@ -317,7 +396,8 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
     paddingHorizontal: 32,
     alignItems: "center",
-    width: width * 0.8,
+    width: width * 0.85,
+    position: "relative",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -327,14 +407,49 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 10,
   },
-  animation: {
-    width: 200,
-    height: 200,
+  animationCloseButton: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#f5f5f5",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  animationText: {
+  animation: {
+    width: 150,
+    height: 150,
+  },
+  animationTitle: {
     fontSize: 28,
     fontWeight: "bold",
     textAlign: "center",
     marginTop: 16,
+    marginBottom: 12,
+  },
+  successMessage: {
+    fontSize: 16,
+    color: "#2E7D32",
+    textAlign: "center",
+    lineHeight: 22,
+    fontWeight: "500",
+  },
+  failMessage: {
+    fontSize: 16,
+    color: "#c62828",
+    textAlign: "center",
+    lineHeight: 22,
+    fontWeight: "500",
   },
 });

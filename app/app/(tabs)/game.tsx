@@ -38,6 +38,8 @@ export default function GameScreen() {
   const [showGameScreen, setShowGameScreen] = useState(false);
   const [flash, setFlash] = useState<FlashMode>("off");
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
+  const [showCapturedUriScan, setShowCapturedUriScan] = useState(false);
+  const [classifiedItem, setClassifiedItem] = useState<string>("");
   const ref = useRef<CameraView>(null);
   const [loadingWidget, setLoadingWidget] = useState(false);
   const [showCloseIcon, setShowCloseIcon] = useState(false);
@@ -56,6 +58,9 @@ export default function GameScreen() {
       setLoadingWidget(false);
       setShowCloseIcon(false);
       setErrorMessage(null);
+      setFlash("off");
+      setShowCapturedUriScan(false);
+      setClassifiedItem("");
       setEcoponto("");
 
       // Force camera to re-render by changing key
@@ -67,6 +72,13 @@ export default function GameScreen() {
         setShowGameScreen(false);
         setClassifying(false);
         setLoadingWidget(false);
+        setShowCloseIcon(false);
+        setErrorMessage(null);
+        setFlash("off");
+        setShowCapturedUriScan(false);
+        setClassifiedItem("");
+        setEcoponto("");
+        setCameraKey(0);
       };
     }, [])
   );
@@ -93,6 +105,7 @@ export default function GameScreen() {
     setClassifying(true);
     setLoadingWidget(true);
     setErrorMessage(null);
+    setClassifiedItem("");
     try {
       if (!model || !capturedUri) {
         setErrorMessage("Model or image not available");
@@ -110,7 +123,7 @@ export default function GameScreen() {
       }
       const [success, message, confidence] = result;
 
-      if (Number(confidence) < 80 || !success) {
+      if (Number(confidence) < 60 || !success) {
         setErrorMessage("Could not classify this image. Try again!");
         return;
       }
@@ -121,10 +134,12 @@ export default function GameScreen() {
           classToEcoponto[message] || "Unknown"
         } with ${confidence} certainty`
       );
+      setClassifiedItem(message);
       setShowGameScreen(true);
     } finally {
       setClassifying(false);
       setLoadingWidget(false);
+      setShowCapturedUriScan(false);
       setFlash("off");
     }
   };
@@ -143,6 +158,7 @@ export default function GameScreen() {
         requestAnimationFrame(() => {
           console.log("📸 Picture taken:", photo.uri);
           setCapturedUri(photo.uri);
+          setShowCapturedUriScan(true);
         });
       }
     } catch (error) {
@@ -224,9 +240,11 @@ export default function GameScreen() {
         <EcopontoWidget
           result={ecoponto}
           image={capturedUri!}
+          classifiedItem={classifiedItem}
           onClose={() => {
             setShowGameScreen(false);
             setCapturedUri(null);
+            setClassifiedItem("");
           }}
         />
       )}
@@ -248,7 +266,7 @@ export default function GameScreen() {
         />
       </TouchableOpacity>
 
-      {capturedUri && (
+      {showCapturedUriScan && capturedUri && (
         <View style={StyleSheet.absoluteFill}>
           <BlurView
             intensity={50}
