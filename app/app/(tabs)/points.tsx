@@ -200,6 +200,7 @@ const styles = StyleSheet.create({
     width: width * 0.8,
   },
   pointsNumber: {
+    padding: 10,
     fontSize: 48,
     fontWeight: "bold",
     color: Colors.light.tabIconSelected,

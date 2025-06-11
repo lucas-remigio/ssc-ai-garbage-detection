@@ -179,7 +179,12 @@ export default function EcopontoWidget({
             {showAnimation === "success" ? "Correct!" : "Game Over"}
           </Text>
           {showAnimation === "success" && (
-            <Text style={styles.successMessage}>{getSuccessMessage()}</Text>
+            <>
+              <View style={styles.pointsEarnedContainer}>
+                <Text style={styles.pointsEarnedText}>+1 Point Earned!</Text>
+              </View>
+              <Text style={styles.successMessage}>{getSuccessMessage()}</Text>
+            </>
           )}
           {showAnimation === "fail" && (
             <Text style={styles.failMessage}>{getErrorMessage()}</Text>
@@ -442,6 +447,21 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 22,
     fontWeight: "500",
+  },
+  pointsEarnedContainer: {
+    backgroundColor: "#e8f5e8",
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: "#4CAF50",
+  },
+  pointsEarnedText: {
+    fontSize: 18,
+    color: "#2E7D32",
+    fontWeight: "bold",
+    textAlign: "center",
   },
   failMessage: {
     fontSize: 16,
