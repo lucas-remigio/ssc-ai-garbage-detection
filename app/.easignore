@@ -1,12 +1,17 @@
-# Exclude specific large directories
-node_modules/
-ios/
-.git/
-.expo/
+# Native build output
+android/.cxx/
+android/.gradle/
+android/app/build/
+android/build/
+ios/build/
+ios/Pods/
 
-# Keep only what we need from assets
-assets/*
-!assets/saved_model/
-assets/saved_model/*
-!assets/saved_model/model.json
-!assets/saved_model/group1-shard*of15.bin
+# Expo caches
+.expo/
+.expo-shared/
+
+# Misc local cruft
+*.log
+*.lock
+.DS_Store
+.vscode/
