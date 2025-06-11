@@ -1,16 +1,17 @@
 // Fallback for using MaterialIcons on Android and web.
 
-import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { SymbolWeight, SymbolViewProps } from 'expo-symbols';
-import { ComponentProps } from 'react';
-import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
+import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { SymbolWeight, SymbolViewProps } from "expo-symbols";
+import { ComponentProps } from "react";
+import { OpaqueColorValue, type StyleProp, type TextStyle } from "react-native";
 
 type IconSymbolName =
-  | 'house.fill'
-  | 'paperplane.fill'
-  | 'chevron.left.forwardslash.chevron.right'
-  | 'chevron.right'
-  | 'videogame-asset.fill';
+  | "house.fill"
+  | "paperplane.fill"
+  | "chevron.left.forwardslash.chevron.right"
+  | "chevron.right"
+  | "videogame-asset.fill"
+  | "star.fill";
 
 /**
  * Add your SF Symbols to Material Icons mappings here.
@@ -18,11 +19,12 @@ type IconSymbolName =
  * - see SF Symbols in the [SF Symbols](https://developer.apple.com/sf-symbols/) app.
  */
 const MAPPING = {
-  'house.fill': 'home',
-  'paperplane.fill': 'send',
-  'videogame-asset.fill': 'videogame-asset',
-  'chevron.left.forwardslash.chevron.right': 'code',
-  'chevron.right': 'chevron-right',
+  "house.fill": "home",
+  "paperplane.fill": "send",
+  "videogame-asset.fill": "videogame-asset",
+  "chevron.left.forwardslash.chevron.right": "code",
+  "chevron.right": "chevron-right",
+  "star.fill": "star",
 } as const;
 
 /**
@@ -42,5 +44,12 @@ export function IconSymbol({
   style?: StyleProp<TextStyle>;
   weight?: SymbolWeight;
 }) {
-  return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
+  return (
+    <MaterialIcons
+      color={color}
+      size={size}
+      name={MAPPING[name]}
+      style={style}
+    />
+  );
 }

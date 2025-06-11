@@ -1,30 +1,31 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { View } from 'react-native';
-import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { Colors } from '@/constants/Colors';
+import { Tabs } from "expo-router";
+import React from "react";
+import { View } from "react-native";
+import { HapticTab } from "@/components/HapticTab";
+import { IconSymbol } from "@/components/ui/IconSymbol";
+import { Colors } from "@/constants/Colors";
 
 export default function TabLayout() {
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors['light'].tabIconSelected,
-        tabBarInactiveTintColor: Colors['light'].tabIconDefault,  
+        tabBarActiveTintColor: Colors["light"].tabIconSelected,
+        tabBarInactiveTintColor: Colors["light"].tabIconDefault,
         headerShown: false,
         tabBarButton: HapticTab,
-        tabBarBackground: () => <View style={{ flex: 1, backgroundColor: '#fff' }} />,
+        tabBarBackground: () => (
+          <View style={{ flex: 1, backgroundColor: "#fff" }} />
+        ),
         tabBarStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: "#fff",
           borderTopWidth: 0,
-          position: 'absolute',
+          position: "absolute",
         },
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: "Home",
           tabBarIcon: ({ color }) => (
             <IconSymbol
               size={28}
@@ -37,26 +38,18 @@ export default function TabLayout() {
       <Tabs.Screen
         name="game"
         options={{
-          title: 'Game',
+          title: "Game",
           tabBarIcon: ({ color, focused }) => (
-            <IconSymbol
-              size={28}
-              name="videogame-asset.fill"
-              color={color}
-            />
+            <IconSymbol size={28} name="videogame-asset.fill" color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="points"
         options={{
-          title: 'Explore',
+          title: "Points",
           tabBarIcon: ({ color, focused }) => (
-            <IconSymbol
-              size={28}
-              name="paperplane.fill"
-              color={color}
-            />
+            <IconSymbol size={28} name="star.fill" color={color} />
           ),
         }}
       />

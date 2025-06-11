@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
+import { usePoints } from "@/hooks/usePoints";
 
 interface EcopontoWidgetProps {
   result: string;
@@ -34,6 +35,7 @@ export default function EcopontoWidget({
   onClose,
   classifiedItem,
 }: EcopontoWidgetProps) {
+  const { addPoints } = usePoints();
   const [showAnimation, setShowAnimation] = useState<"success" | "fail" | null>(
     null
   );
@@ -44,21 +46,24 @@ export default function EcopontoWidget({
     string | null
   >(null);
 
-  const handlePress = (label: string) => {
+  const handlePress = async (label: string) => {
     if (gameFinished) return;
 
     if (label === result) {
-      handleCorrectAnswer(label);
+      await handleCorrectAnswer(label);
     } else {
       handleIncorrectAnswer(label);
     }
   };
 
-  const handleCorrectAnswer = (label: string) => {
+  const handleCorrectAnswer = async (label: string) => {
     console.log(`Correct!`);
     setSelectedCorrectOption(label);
     setShowAnimation("success");
     setGameFinished(true);
+
+    // Add points using the hook
+    await addPoints(1);
 
     // Auto-close after animation completes
     setTimeout(() => {
