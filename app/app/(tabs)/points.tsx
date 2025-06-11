@@ -1,15 +1,23 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { StyleSheet, View, Text, ScrollView, Dimensions } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
 import { usePoints } from "@/hooks/usePoints";
+import { useFocusEffect } from "expo-router";
 
 const { width } = Dimensions.get("window");
 
 export default function PointsScreen() {
-  const { points, loading } = usePoints();
+  const { points, loading, refreshPoints } = usePoints();
+
+  useFocusEffect(
+    useCallback(() => {
+      console.log("PointsScreen focused, refreshing points");
+      refreshPoints();
+    }, [refreshPoints])
+  );
 
   if (loading) {
     return (
@@ -77,6 +85,14 @@ export default function PointsScreen() {
             description="Classify 25 items correctly"
             achieved={points >= 25}
             points="25 points"
+          />
+
+          <AchievementItem
+            icon="flash-on"
+            title="Garbage Superhero"
+            description="Classify 100 items correctly"
+            achieved={points >= 100}
+            points="100 points"
           />
         </View>
       </ThemedView>
