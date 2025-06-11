@@ -1,0 +1,27 @@
+# Large directories not needed for build
+node_modules/
+.git/
+.expo/
+.vscode/
+
+# Build outputs
+android/build/
+android/app/build/
+ios/build/
+ios/Pods/
+
+# Only include the specific model files you need
+assets/saved_model/*
+!assets/saved_model/model.json
+!assets/saved_model/group1-shard*of15.bin
+
+# Development/test files
+**/__tests__/
+**/*.test.js
+**/*.spec.js
+
+# Logs and caches
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
