@@ -4,20 +4,28 @@ O _dataset_ utilizado neste projeto é o **Garbage Classification v2**, disponí
 
 ### Estrutura e Conteúdo
 
-O _dataset_ é composto por imagens RGB distribuídas em **10 classes distintas**, que representam categorias típicas de resíduos sólidos urbanos. Cada imagem retrata objetos do quotidiano descartados no chão ou em contentores, e está classificada conforme o tipo de material predominante. As categorias incluem:
+O _dataset_ é composto por 19762 imagens RGB distribuídas em **10 classes distintas**, que representam categorias típicas de resíduos sólidos urbanos. Cada imagem retrata objetos do quotidiano descartados no chão ou em contentores, e está classificada conforme o tipo de material predominante. As categorias incluem:
 
-- **Cardboard** (papelão)
-- **Glass** (vidro)
-- **Metal** (metal)
-- **Paper** (papel)
-- **Plastic** (plástico)
-- **Trash** (lixo indiferenciado)
-- **Battery** (pilhas)
-- **Shoes** (calçado)
-- **Clothes** (roupa)
-- **Light bulbs** (lâmpadas)
+- **Metal** (metal) com 1020 imagens;
+- **Glass** (vidro) com 3061 imagens;
+- **Biological** (biológico) com 997 imagens;
+- **Paper** (papel) com 1680 imagens;
+- **Battery** (pilhas) com 944 imagens;
+- **Trash** (lixo indiferenciado) com 947 imagens;
+- **Cardboard** (cartão) com 1825 imagens;
+- **Shoes** (calçado) com 1977 imagens;
+- **Clothes** (roupa) com 5327 imagens;
+- **Plastic** (plástico) com 1984 imagens;
 
 Estas classes foram escolhidas com base na sua relevância para sistemas de triagem e reciclagem seletiva, e apresentam um desafio interessante pela sua variedade visual e pelas semelhanças visuais entre certos tipos de materiais (e.g., papel vs. cartão).
+
+Para o processo de treino, utilizou-se a plataforma [Roboflow](https://roboflow.com/) para divisão do dataset nas seguintes percentagens:
+
+- 70 % das imagens para treino
+- 15 % das imagens para validação
+- 15 % das imagens para teste
+
+assegurando assim um volume significativo de dados para o treinamento e mantendo uma margem adequada para avaliar a eficiência do modelo corretamente.
 
 ### Motivação e Aplicação
 
@@ -35,8 +43,8 @@ Este tipo de solução tem um forte impacto educativo e ambiental, promovendo a 
 
 O dataset está organizado de forma a facilitar a divisão em conjuntos de treino, validação e teste, cumprindo os requisitos mínimos estipulados para este projeto:
 
-- **Train:** ≥ 2000 imagens
-- **Validation:** ≥ 1000 imagens
-- **Test:** ≥ 1000 imagens
+- **Train:** ≥ 13800 imagens
+- **Validation:** ≥ 2950 imagens
+- **Test:** ≥ 2950 imagens
 
 As imagens possuem resolução variável e estão em formato RGB, permitindo a utilização de arquiteturas baseadas em redes neuronais convolucionais (CNNs). A diversidade das amostras contribui para a robustez do modelo e oferece uma boa base para experimentações com técnicas de _data augmentation_, regularização e transferência de aprendizagem.
