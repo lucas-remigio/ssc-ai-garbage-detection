@@ -25,7 +25,7 @@ Para o processo de treino, utilizou-se a plataforma [Roboflow](https://roboflow.
 - 15 % das imagens para validação
 - 15 % das imagens para teste
 
-assegurando assim um volume significativo de dados para o treinamento e mantendo uma margem adequada para avaliar a eficiência do modelo corretamente.
+Optou-se pela divisão 70-15-15 para garantir um conjunto de treino robusto, sem comprometer o número de imagens disponíveis para validação e teste. Apesar de se ter ponderado uma divisão 80-10-10, a grande variedade de imagens levou a concluir que 70 % (aproximadamente 13 800) eram suficientes para treinar o modelo, ao mesmo tempo que se mantinham 15 % cada para avaliar a sua eficiência em validação e teste.
 
 Neste projeto, as _features_ extraídas pelas arquiteturas convolucionais (Model S e Model T) foram utilizadas diretamente dentro do _pipeline_ de treino e validação, não sendo exportadas separadamente para ficheiros externos. Por esse motivo, a entrega não inclui ficheiros com _computed features_.
 
