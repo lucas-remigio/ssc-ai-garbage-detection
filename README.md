@@ -27,6 +27,8 @@ Para o processo de treino, utilizou-se a plataforma [Roboflow](https://roboflow.
 
 assegurando assim um volume significativo de dados para o treinamento e mantendo uma margem adequada para avaliar a eficiência do modelo corretamente.
 
+Neste projeto, as _features_ extraídas pelas arquiteturas convolucionais (Model S e Model T) foram utilizadas diretamente dentro do _pipeline_ de treino e validação, não sendo exportadas separadamente para ficheiros externos. Por esse motivo, a entrega não inclui ficheiros com _computed features_.
+
 ### Motivação e Aplicação
 
 O objetivo da utilização deste _dataset_ é o desenvolvimento de um modelo de visão por computador que, integrado numa aplicação móvel, permita identificar automaticamente o tipo de lixo captado pela câmara do dispositivo. A ideia é que o utilizador aponte a câmara para o objeto e a aplicação indique a categoria correta e a correspondente cor do ecoponto onde o objeto deve ser colocado, por exemplo:
