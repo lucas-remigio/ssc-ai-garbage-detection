@@ -1,13 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, Button, Image, StyleSheet } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import * as tf from "@tensorflow/tfjs";
-import { decodeJpeg } from "@tensorflow/tfjs-react-native";
-import * as FileSystem from "expo-file-system";
 import { useModelLoader } from "./useModelLoader";
-import * as ImageManipulator from "expo-image-manipulator";
 import { classifyImage } from "../utils/classifyImage";
-import classNamesFile from "../assets/class_names.json";
 
 export default function ImageClassifier() {
   const { model, loading, error } = useModelLoader();

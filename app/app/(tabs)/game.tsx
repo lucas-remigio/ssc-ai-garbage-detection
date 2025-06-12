@@ -31,7 +31,7 @@ import { useGameCamera } from "@/hooks/useGameCamera";
 
 // Constants
 const { width: windowWidth, height: windowHeight } = Dimensions.get("window");
-const CONFIDENCE_THRESHOLD = 60;
+const CONFIDENCE_THRESHOLD = 40;
 const CLOSE_ICON_DELAY = 500;
 
 // State management
@@ -202,6 +202,7 @@ export default function GameScreen() {
   useFocusEffect(
     useCallback(() => {
       resetAllStates();
+      dispatch({ type: "SET_TUTORIAL", payload: true });
       dispatch({ type: "INCREMENT_CAMERA_KEY" });
 
       return () => {
