@@ -19,7 +19,7 @@ app.add_middleware(
 with open("./class_names.json") as f:
     classes = json.load(f)
 
-model = tf.keras.models.load_model("./vgg16_finetuned_model.keras")
+model = tf.keras.models.load_model("./model/vgg16_finetuned_model.keras")
 
 @app.post("/predict/")
 async def predict(file: UploadFile = File(...)):
